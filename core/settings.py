@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import dj_database_url
-import dj_database_url
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -139,7 +139,6 @@ LOGOUT_REDIRECT_URL = '/'
 
 from dotenv import load_dotenv
 import os
-import dj_database_url
 load_dotenv()
 
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
@@ -150,3 +149,10 @@ from django.template.context_processors import request
 TEMPLATES[0]['OPTIONS']['context_processors'].append(
     'core.context_processors.global_settings'
 )
+import os
+from django.contrib.auth import get_user_model
+
+def create_default_superuser():
+    User = get_user_model()
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
