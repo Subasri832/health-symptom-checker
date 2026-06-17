@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Find Doctors — HealthAI{% endblock %}
+
+{% block extra_css %}
+<style>
+.filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.filter-select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #e2e8f0;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    cursor: pointer;
+}
+
+.filter-input {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #e2e8f0;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-input::placeholder { color: #475569; }
+
+.doctor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.doc-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 20px;
+    transition: all 0.2s;
+}
+
+.doc-card:hover {
+    border-color: rgba(124,58,237,0.4);
+    transform: translateY(-2px);
+}
+
+.doc-avatar {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 12px;
+}
+
+.doc-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+}
+
+.doc-spec {
+    font-size: 13px;
+    color: #a78bfa;
+    margin-bottom: 8px;
+}
+
+.doc-info {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.doc-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.stars { color: #fbbf24; font-size: 13px; }
+.fee { color: #a78bfa; font-size: 13px; font-weight: 600; }
+
+#map {
+    height: 400px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 32px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:32px">
+
+    <div style="margin-bottom:24px">
+        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:2rem;margin-bottom:8px">
+            🗺️ Find Doctors Near You
+        </h1>
+        <p style="color:#64748b">Search by speciality and location</p>
+    </div>
+
+    <!-- FILTERS -->
+    <form method="GET" class="filter-bar">
+        <select name="speciality" class="filter-select" onchange="this.form.submit()">
+            <option value="">All Specialities</option>
+            {% for value, label in specialities %}
+            <option value="{{ value }}" {% if value == selected_speciality %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <input
+            type="text"
+            name="city"
+            class="filter-input"
+            placeholder="Search by city..."
+            value="{{ selected_city }}"
+        >
+        <button type="submit" class="btn-primary">
+            <i class="fas fa-search"></i> Search
+        </button>
+    </form>
+
+    <!-- MAP -->
+    <div id="map"></div>
+
+    <!-- DOCTOR CARDS -->
+    <h2 style="font-size:18px;margin-bottom:16px;color:#94a3b8">
+        {{ doctors|length }} doctor{{ doctors|length|pluralize }} found
+    </h2>
+
+    {% if doctors %}
+    <div class="doctor-grid">
+        {% for doctor in doctors %}
+        <div class="doc-card">
+            <div class="doc-avatar">👨‍⚕️</div>
+            <div class="doc-name">Dr. {{ doctor.name }}</div>
+            <div class="doc-spec">{{ doctor.get_speciality_display }}</div>
+            <div class="doc-info">
+                🏥 {{ doctor.hospital }}<br>
+                📍 {{ doctor.area }}, {{ doctor.city }}<br>
+                📞 {{ doctor.phone }}
+            </div>
+            <div class="doc-footer">
+                <span class="stars">⭐ {{ doctor.rating }}</span>
+                <span class="fee">₹{{ doctor.consultation_fee }}</span>
+                <a href="tel:{{ doctor.phone }}" class="btn-secondary" style="padding:6px 14px;font-size:12px">
+                    Call Now
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div style="text-align:center;padding:60px;color:#475569">
+        <div style="font-size:48px;margin-bottom:16px">🔍</div>
+        <h3>No doctors found</h3>
+        <p style="margin-top:8px;font-size:14px">Try a different speciality or city</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function initMap() {
+    const response = await fetch('/doctors/map/?speciality={{ selected_speciality }}');
+    const data = await response.json();
+
+    if (!data.doctors || data.doctors.length === 0) return;
+
+    const firstDoc = data.doctors[0];
+
+    const map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: firstDoc.lat, lng: firstDoc.lng },
+        zoom: 12,
+        styles: [
+            { elementType: "geometry", stylers: [{ color: "#1e1b4b" }] },
+            { elementType: "labels.text.fill", stylers: [{ color: "#a78bfa" }] },
+            { elementType: "labels.text.stroke", stylers: [{ color: "#1e1b4b" }] },
+            { featureType: "road", elementType: "geometry", stylers: [{ color: "#312e81" }] },
+            { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f0c29" }] },
+        ]
+    });
+
+    data.doctors.forEach(doc => {
+        const marker = new google.maps.Marker({
+            position: { lat: doc.lat, lng: doc.lng },
+            map: map,
+            title: doc.name,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: '#7c3aed',
+                fillOpacity: 1,
+                strokeColor: '#a78bfa',
+                strokeWeight: 2,
+            }
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+            <div style="padding:8px;font-family:Inter,sans-serif">
+                <strong>${doc.name}</strong><br>
+                <span style="color:#7c3aed">${doc.speciality}</span><br>
+                ${doc.hospital}<br>
+                ⭐ ${doc.rating} · ₹${doc.fee}<br>
+                📞 ${doc.phone}
+            </div>`
+        });
+
+        marker.addListener('click', () => infoWindow.open(map, marker));
+    });
+}
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap" async defer></script>
+{% endblock %}

@@ -1,0 +1,11 @@
+django
+djangorestframework
+psycopg2-binary
+python-dotenv
+requests
+deep-translator
+groq
+langchain-groq
+gunicorn
+whitenoise
+dj-database-url

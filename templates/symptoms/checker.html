@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+
+{% block title %}Symptom Checker — HealthAI{% endblock %}
+
+{% block extra_css %}
+<style>
+.checker-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 40px 0;
+}
+
+.input-section { display: flex; flex-direction: column; gap: 16px; }
+
+.lang-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.lang-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+    background: transparent;
+    color: #94a3b8;
+}
+
+.lang-btn.active {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: white;
+}
+
+.symptom-input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 16px;
+    color: #e2e8f0;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    resize: vertical;
+    min-height: 140px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.symptom-input:focus {
+    border-color: rgba(124,58,237,0.6);
+}
+
+.symptom-input::placeholder { color: #475569; }
+
+.quick-symptoms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.quick-chip {
+    background: rgba(124,58,237,0.1);
+    border: 1px solid rgba(124,58,237,0.3);
+    color: #a78bfa;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quick-chip:hover {
+    background: rgba(124,58,237,0.25);
+}
+
+.result-section { display: flex; flex-direction: column; gap: 16px; }
+
+.result-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    color: #475569;
+    text-align: center;
+    gap: 12px;
+}
+
+.severity-card {
+    padding: 20px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.severity-mild { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); }
+.severity-moderate { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); }
+.severity-serious { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+
+.doctor-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-bubble {
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #c4b5fd;
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.chat-bubble.ai {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    color: #e2e8f0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="padding-top:32px;margin-bottom:24px">
+        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:2rem;margin-bottom:8px">
+            🩺 AI Symptom Checker
+        </h1>
+        <p style="color:#64748b">Describe your symptoms and get instant AI analysis with doctor recommendations</p>
+    </div>
+
+    <div class="checker-layout">
+
+        <!-- LEFT: INPUT -->
+        <div class="input-section">
+            <div class="card">
+                <h3 style="margin-bottom:16px;font-size:15px;color:#94a3b8">
+                    <i class="fas fa-language"></i> Select Language
+                </h3>
+                <div class="lang-toggle">
+                    <button class="lang-btn active" onclick="setLanguage('en', this)">
+                        🇬🇧 English
+                    </button>
+                    <button class="lang-btn" onclick="setLanguage('ta', this)">
+                        🇮🇳 தமிழ்
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom:12px;font-size:15px;color:#94a3b8">
+                    <i class="fas fa-comment-medical"></i> Describe Your Symptoms
+                </h3>
+                <textarea
+                    id="symptomsInput"
+                    class="symptom-input"
+                    placeholder="Example: I have been having headache and fever for 2 days with body pain..."
+                ></textarea>
+
+                <div style="margin:12px 0">
+                    <p style="font-size:12px;color:#475569;margin-bottom:8px">Quick add:</p>
+                    <div class="quick-symptoms">
+                        <span class="quick-chip" onclick="addSymptom('Headache')">Headache</span>
+                        <span class="quick-chip" onclick="addSymptom('Fever')">Fever</span>
+                        <span class="quick-chip" onclick="addSymptom('Cough')">Cough</span>
+                        <span class="quick-chip" onclick="addSymptom('Body pain')">Body pain</span>
+                        <span class="quick-chip" onclick="addSymptom('Nausea')">Nausea</span>
+                        <span class="quick-chip" onclick="addSymptom('Chest pain')">Chest pain</span>
+                        <span class="quick-chip" onclick="addSymptom('Dizziness')">Dizziness</span>
+                        <span class="quick-chip" onclick="addSymptom('Fatigue')">Fatigue</span>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="analyzeSymptoms()" id="analyzeBtn" style="width:100%;margin-top:8px">
+                    <i class="fas fa-brain"></i> Analyze Symptoms
+                </button>
+            </div>
+
+            <!-- CONVERSATION HISTORY -->
+            <div class="card" id="conversationCard" style="display:none">
+                <h3 style="margin-bottom:12px;font-size:15px;color:#94a3b8">
+                    <i class="fas fa-comments"></i> Conversation
+                </h3>
+                <div id="conversationHistory"></div>
+                <textarea
+                    id="followUpInput"
+                    class="symptom-input"
+                    placeholder="Answer the follow-up question or add more details..."
+                    style="min-height:80px;margin-top:12px"
+                ></textarea>
+                <button class="btn-primary" onclick="sendFollowUp()" style="width:100%;margin-top:8px">
+                    <i class="fas fa-paper-plane"></i> Send Reply
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT: RESULTS -->
+        <div class="result-section" id="resultSection">
+            <div class="result-placeholder" id="placeholder">
+                <div style="font-size:64px">🏥</div>
+                <h3 style="color:#475569;font-size:16px">Your analysis will appear here</h3>
+                <p style="font-size:13px;color:#334155">Enter your symptoms and click Analyze</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentLanguage = 'en';
+let conversationHistory = [];
+
+function setLanguage(lang, btn) {
+    currentLanguage = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const input = document.getElementById('symptomsInput');
+    if (lang === 'ta') {
+        input.placeholder = 'உதாரணம்: எனக்கு 2 நாட்களாக தலைவலி மற்றும் காய்ச்சல் உள்ளது...';
+    } else {
+        input.placeholder = 'Example: I have been having headache and fever for 2 days with body pain...';
+    }
+}
+
+function addSymptom(symptom) {
+    const input = document.getElementById('symptomsInput');
+    input.value = input.value ? input.value + ', ' + symptom : symptom;
+}
+
+async function analyzeSymptoms() {
+    const symptoms = document.getElementById('symptomsInput').value.trim();
+    if (!symptoms) {
+        alert('Please describe your symptoms first!');
+        return;
+    }
+
+    const btn = document.getElementById('analyzeBtn');
+    btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/symptoms/analyze/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                symptoms: symptoms,
+                language: currentLanguage,
+                conversation_history: conversationHistory
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            conversationHistory.push({ role: 'user', content: symptoms });
+            conversationHistory.push({ role: 'assistant', content: data.diagnosis });
+            displayResults(data);
+            showConversation(symptoms, data);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (err) {
+        alert('Something went wrong. Please try again.');
+    }
+
+    btn.innerHTML = '<i class="fas fa-brain"></i> Analyze Symptoms';
+    btn.disabled = false;
+}
+
+async function sendFollowUp() {
+    const followUp = document.getElementById('followUpInput').value.trim();
+    if (!followUp) return;
+
+    await analyzeWithText(followUp);
+    document.getElementById('followUpInput').value = '';
+}
+
+async function analyzeWithText(text) {
+    conversationHistory.push({ role: 'user', content: text });
+
+    try {
+        const response = await fetch('/symptoms/analyze/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                symptoms: text,
+                language: currentLanguage,
+                conversation_history: conversationHistory
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            conversationHistory.push({ role: 'assistant', content: data.diagnosis });
+            displayResults(data);
+            addToConversation(text, data.diagnosis);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function displayResults(data) {
+    document.getElementById('placeholder').style.display = 'none';
+
+    const severityClass = 'severity-' + data.severity;
+    const severityEmoji = data.severity_emoji;
+
+    let doctorsHTML = '';
+    if (data.doctors && data.doctors.length > 0) {
+        doctorsHTML = `
+        <div class="card" style="margin-top:0">
+            <h3 style="margin-bottom:12px;font-size:15px;color:#94a3b8">
+                <i class="fas fa-user-md"></i> Recommended Doctors
+            </h3>
+            ${data.doctors.map(d => `
+            <div class="doctor-card" style="margin-bottom:8px">
+                <div>
+                    <div style="font-weight:600;font-size:14px;color:#e2e8f0">Dr. ${d.name}</div>
+                    <div style="font-size:12px;color:#64748b">${d.speciality} · ${d.hospital}</div>
+                    <div style="font-size:12px;color:#64748b">${d.area}, ${d.city}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="color:#fbbf24;font-size:13px">⭐ ${d.rating}</div>
+                    <div style="font-size:12px;color:#a78bfa">₹${d.consultation_fee}</div>
+                    <a href="tel:${d.phone}" style="font-size:12px;color:#60a5fa">📞 Call</a>
+                </div>
+            </div>
+            `).join('')}
+        </div>`;
+    }
+
+    document.getElementById('resultSection').innerHTML = `
+    <div class="${severityClass} severity-card">
+        <div style="font-size:36px">${severityEmoji}</div>
+        <div>
+            <div style="font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Severity Level</div>
+            <div style="font-size:20px;font-weight:700;text-transform:capitalize">${data.severity}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom:12px;font-size:15px;color:#94a3b8">
+            <i class="fas fa-stethoscope"></i> AI Analysis
+        </h3>
+        <div style="font-size:14px;color:#e2e8f0;line-height:1.7;white-space:pre-wrap">${data.diagnosis}</div>
+    </div>
+
+    ${data.possible_conditions && data.possible_conditions.length > 0 ? `
+    <div class="card">
+        <h3 style="margin-bottom:12px;font-size:15px;color:#94a3b8">
+            <i class="fas fa-list-ul"></i> Possible Conditions
+        </h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${data.possible_conditions.map(c => `
+            <span style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);
+            color:#93c5fd;padding:4px 12px;border-radius:20px;font-size:13px">${c}</span>
+            `).join('')}
+        </div>
+    </div>` : ''}
+
+    ${data.immediate_advice ? `
+    <div class="card" style="border-color:rgba(34,197,94,0.3)">
+        <h3 style="margin-bottom:8px;font-size:15px;color:#86efac">
+            <i class="fas fa-first-aid"></i> Immediate Advice
+        </h3>
+        <p style="font-size:14px;color:#e2e8f0;line-height:1.6">${data.immediate_advice}</p>
+    </div>` : ''}
+
+    ${doctorsHTML}
+
+    <div style="font-size:12px;color:#475569;text-align:center;padding:8px">
+        ⚠️ This is AI-generated information only. Always consult a qualified doctor.
+    </div>
+    `;
+}
+
+function showConversation(userMsg, data) {
+    document.getElementById('conversationCard').style.display = 'block';
+    document.getElementById('conversationHistory').innerHTML = '';
+    addToConversation(userMsg, data.follow_up_questions || data.diagnosis);
+}
+
+function addToConversation(userMsg, aiMsg) {
+    const history = document.getElementById('conversationHistory');
+    history.innerHTML += `
+    <div class="chat-bubble" style="margin-bottom:8px">
+        <strong style="color:#a78bfa">You:</strong> ${userMsg}
+    </div>
+    <div class="chat-bubble ai" style="margin-bottom:12px">
+        <strong style="color:#60a5fa">HealthAI:</strong> ${aiMsg}
+    </div>`;
+}
+</script>
+{% endblock %}

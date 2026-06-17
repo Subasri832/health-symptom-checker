@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}My Health History — HealthAI{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:32px">
+
+    <div style="margin-bottom:32px">
+        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:2rem;margin-bottom:8px">
+            📊 My Health History
+        </h1>
+        <p style="color:#64748b">All your past symptom checks in one place</p>
+    </div>
+
+    {% if checks %}
+
+    <!-- SUMMARY CARDS -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">
+        <div class="card" style="text-align:center">
+            <div style="font-size:2rem;font-weight:700;color:#a78bfa">{{ checks|length }}</div>
+            <div style="color:#64748b;font-size:13px;margin-top:4px">Total Checks</div>
+        </div>
+        <div class="card" style="text-align:center">
+            <div style="font-size:2rem;font-weight:700;color:#fbbf24">
+                {{ checks.0.created_at|date:"d M" }}
+            </div>
+            <div style="color:#64748b;font-size:13px;margin-top:4px">Last Check</div>
+        </div>
+        <div class="card" style="text-align:center">
+            <div style="font-size:2rem;font-weight:700;color:#60a5fa">
+                {{ checks.0.severity|title }}
+            </div>
+            <div style="color:#64748b;font-size:13px;margin-top:4px">Last Severity</div>
+        </div>
+    </div>
+
+    <!-- HISTORY LIST -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+        {% for check in checks %}
+        <div class="card" style="border-left:4px solid
+            {% if check.severity == 'mild' %}#22c55e
+            {% elif check.severity == 'moderate' %}#f59e0b
+            {% else %}#ef4444{% endif %}">
+
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <div>
+                    <span class="badge-{{ check.severity }}">
+                        {% if check.severity == 'mild' %}🟢
+                        {% elif check.severity == 'moderate' %}🟡
+                        {% else %}🔴{% endif %}
+                        {{ check.severity|title }}
+                    </span>
+                    <span style="margin-left:8px;font-size:12px;color:#475569">
+                        {{ check.created_at|date:"d M Y, h:i A" }}
+                    </span>
+                </div>
+                <span style="font-size:12px;background:rgba(124,58,237,0.1);
+                border:1px solid rgba(124,58,237,0.3);color:#a78bfa;
+                padding:3px 10px;border-radius:20px">
+                    {{ check.get_recommended_speciality_display }}
+                </span>
+            </div>
+
+            <div style="margin-bottom:12px">
+                <p style="font-size:12px;color:#475569;margin-bottom:4px">Symptoms reported:</p>
+                <p style="font-size:14px;color:#e2e8f0">{{ check.symptoms_input }}</p>
+            </div>
+
+            <details>
+                <summary style="font-size:13px;color:#a78bfa;cursor:pointer">
+                    View AI Analysis
+                </summary>
+                <div style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.03);
+                border-radius:8px;font-size:13px;color:#94a3b8;line-height:1.7;white-space:pre-wrap">
+                    {{ check.ai_diagnosis }}
+                </div>
+            </details>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div style="text-align:center;padding:80px 0;color:#475569">
+        <div style="font-size:64px;margin-bottom:16px">📋</div>
+        <h3 style="font-size:18px;margin-bottom:8px">No history yet</h3>
+        <p style="font-size:14px;margin-bottom:24px">Start your first symptom check to see history here</p>
+        <a href="/symptoms/" class="btn-primary">🩺 Check Symptoms Now</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

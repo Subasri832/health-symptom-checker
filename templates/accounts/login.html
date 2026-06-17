@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Login — HealthAI{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:center;padding:60px 24px">
+    <div class="card" style="width:100%;max-width:420px">
+
+        <div style="text-align:center;margin-bottom:28px">
+            <div style="font-size:48px;margin-bottom:12px">🏥</div>
+            <h2 style="font-family:'Space Grotesk',sans-serif;font-size:1.8rem">Welcome back</h2>
+            <p style="color:#64748b;margin-top:6px;font-size:14px">Login to access your health history</p>
+        </div>
+
+        <form method="POST" style="display:flex;flex-direction:column;gap:16px">
+            {% csrf_token %}
+
+            <div>
+                <label style="font-size:13px;color:#94a3b8;display:block;margin-bottom:6px">Username</label>
+                <input type="text" name="username" required
+                    style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);
+                    color:#e2e8f0;padding:12px 16px;border-radius:10px;font-size:14px;
+                    font-family:'Inter',sans-serif;outline:none"
+                    placeholder="Enter username">
+            </div>
+
+            <div>
+                <label style="font-size:13px;color:#94a3b8;display:block;margin-bottom:6px">Password</label>
+                <input type="password" name="password" required
+                    style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);
+                    color:#e2e8f0;padding:12px 16px;border-radius:10px;font-size:14px;
+                    font-family:'Inter',sans-serif;outline:none"
+                    placeholder="Enter password">
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-error">Invalid username or password</div>
+            {% endif %}
+
+            <button type="submit" class="btn-primary" style="width:100%;padding:13px">
+                Login
+            </button>
+        </form>
+
+        <p style="text-align:center;margin-top:20px;font-size:14px;color:#64748b">
+            Don't have an account?
+            <a href="/accounts/register/" style="color:#a78bfa">Sign up free</a>
+        </p>
+
+    </div>
+</div>
+{% endblock %}
