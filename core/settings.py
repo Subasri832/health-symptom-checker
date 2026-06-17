@@ -149,10 +149,3 @@ from django.template.context_processors import request
 TEMPLATES[0]['OPTIONS']['context_processors'].append(
     'core.context_processors.global_settings'
 )
-import os
-from django.contrib.auth import get_user_model
-
-def create_default_superuser():
-    User = get_user_model()
-    if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
